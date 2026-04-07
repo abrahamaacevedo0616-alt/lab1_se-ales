@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 1 — Transformaciones de Señales · Uninorte 2026-10</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+<main class="container">
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       ENCABEZADO
+  ════════════════════════════════════════════════════════════════════ -->
+  <header class="hero">
+    <div class="hero-badges">
+      <span class="badge badge-uni">Universidad del Norte</span>
+      <span class="badge badge-year">2026-10</span>
+      <span class="badge">Señales y Sistemas</span>
+      <span class="badge">Laboratorio 1</span>
+    </div>
+    <h1>Transformaciones de Señales en Tiempo Continuo y Discreto</h1>
+    <p class="lead">
+      Herramienta interactiva para visualizar señales base, aplicar transformaciones de tiempo
+      (desplazamiento, escalado, decimación e interpolación), calcular operaciones compuestas
+      y procesar señales muestreadas desde archivos. Implementa todos los requerimientos de la propuesta.
+    </p>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       REQ. 1 — SEÑALES BASE (SECCIÓN A)
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="panel controls" style="display:grid; gap:12px;">
+    <div>
+      <div class="section-tag tag-a">Req. 1 · Sección A — Señales Base</div>
+      <p class="muted-text" style="margin-top:4px;">
+        Cuatro señales predefinidas: dos continuas lineales a tramos y dos discretas (secuencia finita y exponencial a tramos).
+      </p>
+    </div>
+    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+      <div class="control-group">
+        <label for="domain-select">Dominio</label>
+        <select id="domain-select">
+          <option value="continuous">Tiempo continuo  x(t)</option>
+          <option value="discrete">Tiempo discreto  x[n]</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="signal-select">Señal base</label>
+        <select id="signal-select"></select>
+      </div>
+      <button id="load-signal-btn">Graficar señal</button>
+    </div>
+  </section>
+
+  <section class="grid main-grid">
+    <article class="panel info-panel">
+      <h2 id="signal-title">— Seleccione una señal —</h2>
+      <p id="signal-description">La descripción aparecerá aquí.</p>
+      <div class="hr"></div>
+      <p class="expression" id="base-expression">x(t)</p>
+    </article>
+    <article class="panel plot-panel">
+      <canvas id="plot-canvas" width="960" height="400"></canvas>
+    </article>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       REQ. 2 — MENÚ DE TRANSFORMACIONES (SECCIÓN B)
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="panel transform-panel">
+    <div class="transform-header">
+      <div class="section-tag tag-b">Req. 2 · Sección B — Menú de Transformaciones</div>
+      <h2>x(at ± t₀) &nbsp;/&nbsp; x[Mn ± n₀]</h2>
+      <p>
+        Selecciona el método de descomposición y los parámetros. Para señales discretas con |M|&nbsp;&lt;&nbsp;1
+        elige el tipo de interpolación (cero, escalón o lineal).
+      </p>
+    </div>
+
+    <div class="transform-controls">
+      <div class="control-group">
+        <label for="method-select">Método de descomposición</label>
+        <select id="method-select">
+          <option value="method_1">Método 1 — escalar → desplazar</option>
+          <option value="method_2">Método 2 — desplazar → escalar</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="scale-sign-select">Signo de a / M</label>
+        <select id="scale-sign-select">
+          <option value="+">Positivo (+)</option>
+          <option value="-">Negativo (−)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="scale-mag-select">|a| o |M|</label>
+        <select id="scale-mag-select"></select>
+      </div>
+      <div class="control-group">
+        <label for="shift-sign-select">Signo de t₀ / n₀</label>
+        <select id="shift-sign-select">
+          <option value="+">+</option>
+          <option value="-">−</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="shift-mag-select">t₀ o n₀</label>
+        <select id="shift-mag-select"></select>
+      </div>
+      <div class="control-group" id="interp-mode-group">
+        <label for="interp-mode-select">Interpolación (|M| &lt; 1)</label>
+        <select id="interp-mode-select">
+          <option value="zero">Inserción de ceros</option>
+          <option value="step">Retención de escalón</option>
+          <option value="linear">Interpolación lineal</option>
+        </select>
+      </div>
+      <button id="transform-btn">Aplicar transformación</button>
+    </div>
+
+    <div class="transform-summary panel nested-panel">
+      <h3>Expresión resultante</h3>
+      <p class="expression" id="final-expression">— aplicar transformación para ver el resultado —</p>
+      <p id="transform-note" class="muted-text" style="margin-top:6px;"></p>
+    </div>
+
+    <div class="steps-grid">
+      <article class="panel nested-panel">
+        <h3 id="step-1-title">Paso 1</h3>
+        <p class="expression" id="step-1-expression"></p>
+        <canvas id="step-1-canvas" width="520" height="270"></canvas>
+      </article>
+      <article class="panel nested-panel">
+        <h3 id="step-2-title">Paso 2</h3>
+        <p class="expression" id="step-2-expression"></p>
+        <canvas id="step-2-canvas" width="520" height="270"></canvas>
+      </article>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       REQ. 2 (interpolación) — SECCIÓN C
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="panel transform-panel">
+    <div class="transform-header">
+      <div class="section-tag tag-c">Req. 2 · Sección C — Interpolación Discreta</div>
+      <h2>x[n / L]</h2>
+      <p>Tres métodos implementados: inserción de ceros, retención de escalón e interpolación lineal.</p>
+    </div>
+
+    <div class="transform-controls">
+      <div class="control-group">
+        <label for="interp-signal-select">Secuencia discreta</label>
+        <select id="interp-signal-select"></select>
+      </div>
+      <div class="control-group">
+        <label for="interp-factor-select">Factor de interpolación L</label>
+        <select id="interp-factor-select">
+          <option value="2">L = 2</option>
+          <option value="3">L = 3</option>
+          <option value="4">L = 4</option>
+          <option value="5">L = 5</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="interp-type-select">Método</label>
+        <select id="interp-type-select">
+          <option value="zero">Inserción de ceros</option>
+          <option value="step">Retención de escalón</option>
+          <option value="linear">Interpolación lineal</option>
+        </select>
+      </div>
+      <button id="interpolate-btn">Interpolar</button>
+    </div>
+
+    <div class="transform-summary panel nested-panel">
+      <h3>Resultado</h3>
+      <p class="expression" id="interp-expression">— seleccionar parámetros y presionar Interpolar —</p>
+      <p id="interp-note" class="muted-text" style="margin-top:6px;"></p>
+    </div>
+
+    <div class="steps-grid">
+      <article class="panel nested-panel">
+        <h3 id="interp-step-1-title">Señal original x[n]</h3>
+        <p class="expression" id="interp-step-1-expression"></p>
+        <canvas id="interp-step-1-canvas" width="520" height="270"></canvas>
+      </article>
+      <article class="panel nested-panel">
+        <h3 id="interp-step-2-title">Señal interpolada</h3>
+        <p class="expression" id="interp-step-2-expression"></p>
+        <canvas id="interp-step-2-canvas" width="520" height="270"></canvas>
+      </article>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       REQ. 3 — OPERACIÓN CONTINUA OBLIGATORIA (SECCIÓN D)
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="panel transform-panel">
+    <div class="transform-header">
+      <div class="section-tag tag-d">Req. 3 · Sección D — Operación Continua</div>
+      <h2>y(t) = x(t/3 + 2) + x(1 − t/4)</h2>
+      <p>Suma de dos transformaciones de la señal seleccionada, evaluadas sobre el rango de validez de cada término.</p>
+    </div>
+
+    <div class="transform-controls">
+      <div class="control-group">
+        <label for="continuous-op-signal-select">Señal continua base</label>
+        <select id="continuous-op-signal-select"></select>
+      </div>
+      <button id="continuous-op-btn">Calcular y(t)</button>
+    </div>
+
+    <div class="transform-summary panel nested-panel">
+      <h3>Expresión resultante</h3>
+      <p class="expression" id="continuous-op-expression">y(t) = x(t/3 + 2) + x(1 − t/4)</p>
+      <p id="continuous-op-note" class="muted-text" style="margin-top:6px;"></p>
+    </div>
+
+    <div class="steps-grid">
+      <article class="panel nested-panel">
+        <h3 id="continuous-op-step-1-title">Término 1: x(t/3 + 2)</h3>
+        <p class="expression" id="continuous-op-step-1-expression"></p>
+        <canvas id="continuous-op-step-1-canvas" width="520" height="270"></canvas>
+      </article>
+      <article class="panel nested-panel">
+        <h3 id="continuous-op-step-2-title">Término 2: x(1 − t/4)</h3>
+        <p class="expression" id="continuous-op-step-2-expression"></p>
+        <canvas id="continuous-op-step-2-canvas" width="520" height="270"></canvas>
+      </article>
+    </div>
+
+    <article class="panel nested-panel">
+      <h3>Señal resultante y(t)</h3>
+      <canvas id="continuous-op-final-canvas" width="1060" height="290"></canvas>
+    </article>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       REQ. 4 — SEÑALES DESDE ARCHIVOS .TXT (SECCIÓN E)
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="panel transform-panel">
+    <div class="transform-header">
+      <div class="section-tag tag-e">Req. 4 · Sección E — Señales desde Archivos</div>
+      <h2>Procesamiento de señales muestreadas</h2>
+      <p>
+        Carga dos archivos .txt: señal 1 muestreada a 2 kHz y señal 2 a 2.2 kHz.
+        La herramienta las sobreMuestrea al MCM (22 kHz) usando el método elegido
+        y calcula la suma y(t)&nbsp;=&nbsp;y₁(t)&nbsp;+&nbsp;y₂(t).
+      </p>
+    </div>
+
+    <div class="transform-controls">
+      <div class="control-group">
+        <label for="file1-input">Señal 1 (.txt · 2 kHz)</label>
+        <input id="file1-input" type="file" accept=".txt" />
+      </div>
+      <div class="control-group">
+        <label for="file2-input">Señal 2 (.txt · 2.2 kHz)</label>
+        <input id="file2-input" type="file" accept=".txt" />
+      </div>
+      <div class="control-group">
+        <label for="file-interp-mode-select">Método de interpolación</label>
+        <select id="file-interp-mode-select">
+          <option value="linear">Lineal</option>
+          <option value="step">Retención de escalón</option>
+          <option value="zero">Inserción de ceros</option>
+        </select>
+      </div>
+      <button id="file-sum-btn">Procesar archivos</button>
+    </div>
+
+    <div class="transform-summary panel nested-panel">
+      <h3>Parámetros del proceso</h3>
+      <p class="expression" id="file-sum-expression">— cargar los dos archivos y presionar Procesar —</p>
+      <p id="file-sum-note" class="muted-text" style="margin-top:6px;"></p>
+    </div>
+
+    <div class="steps-grid">
+      <article class="panel nested-panel">
+        <h3>Señales originales superpuestas</h3>
+        <canvas id="file-originals-canvas" width="520" height="270"></canvas>
+      </article>
+      <article class="panel nested-panel">
+        <h3>Señales sobremuestreadas a 22 kHz</h3>
+        <canvas id="file-oversampled-canvas" width="520" height="270"></canvas>
+      </article>
+    </div>
+
+    <article class="panel nested-panel">
+      <h3>Suma y(t) = y₁(t) + y₂(t)</h3>
+      <canvas id="file-sum-canvas" width="1060" height="290"></canvas>
+    </article>
+  </section>
+
+</main>
+
+<script>
+  window.__SIGNAL_CATALOG__ = {{ catalog | tojson }};
+  window.__ALLOWED__ = {
+    continuousScale: {{ allowed_a | tojson }},
+    discreteScale:   {{ allowed_m | tojson }},
+    continuousShift: {{ allowed_t0 | tojson }},
+    discreteShift:   {{ allowed_n0 | tojson }},
+    interpMethods:   {{ interp_methods | tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
